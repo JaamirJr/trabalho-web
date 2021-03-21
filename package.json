@@ -1,0 +1,23 @@
+{
+  "name": "trabalho-web-front",
+  "version": "1.0.0",
+  "description": "Trabalho final da matéria de Desenvolvimento Web",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JaamirJr/trabalho-web-front.git"
+  },
+  "author": "Jamir",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JaamirJr/trabalho-web-front/issues"
+  },
+  "homepage": "https://github.com/JaamirJr/trabalho-web-front#readme",
+  "dependencies": {
+    "antd": "^4.14.0",
+    "react-router-dom": "^5.2.0"
+  }
+}
