@@ -1,102 +1,84 @@
 import './Turmas.css'
-import React, { useState } from 'react';
-import { Input, Form, Col, Row, DatePicker, Button, Layout, Breadcrumb, Table, Radio, Divider } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Input, Form, Col, Row, DatePicker, Button, Layout, Breadcrumb, Table, message, Space, Popconfirm, Collapse } from 'antd';
 import { ptBR } from 'antd/lib/locale/pt_BR';
 import './Alunos.css'
 import axios from 'axios';
+import { format } from 'date-fns'
 import moment from 'moment';
 
-const { Content } = Layout;
 export default function Turmas() {
 
-    let listaAlunos
-    var auxiliar 
-    var listring
-    axios.get("http://localhost:3001/alunos")
-        .then(data => {
-            auxiliar = data.data.dados
-            listaAlunos = JSON.stringify(data.data.dados)
-            console.log("Alunos\n" + listaAlunos)
-            console.log("Lista Alunos "+typeof(listaAlunos))
-            console.log("auxiliar "+typeof(auxiliar))
-            listring = String(listaAlunos)
-            console.log("listring " + typeof(listring) + "\nConteudo\n" + listring)
-        });
+    let selectedAlunos
+    let alunosTurma
+    const { Panel } = Collapse;
+    const { Content } = Layout;
+    const [isEdit, setIsEdit] = useState(false)
+    const [inEdit, setInEdit] = useState(null)
+    const [form] = Form.useForm()
+    const [alunosMatriculados, setAlunosMatriculados] = useState(null)
+    const [listaAlunos, setListaAlunos] = useState(null)
+    const [listaTurmas, setListaTurmas] = useState(null)
+
+    useEffect(() => {
+        const getAlunos = () => {
+            axios.get("http://localhost:3001/alunos")
+                .then(info => {
+                    for (let index = 0; index < info.data.dados.length; index++) {
+                        const data = new Date(info.data.dados[index].data_matricula);
+                        info.data.dados[index].data_matricula = format(data, "dd/MM/yyyy")
+                    }
+                    setListaAlunos(info.data.dados)
+                });
+        }
+        const getTurmas = () => {
+            axios.get("http://localhost:3001/turmas")
+                .then(info => {
+                    for (let index = 0; index < info.data.dados.length; index++) {
+                        const data = new Date(info.data.dados[index].data_inicio);
+                        info.data.dados[index].data_inicio = format(data, "dd/MM/yyyy")
+                    }
+                    setListaTurmas(info.data.dados)
+                });
+        }
+        if (listaAlunos === null) getAlunos()
+        if (listaTurmas === null) getTurmas()
+    })
+
+
+    const rowSelection = {
+        // selections: {alunosTurma},
+        onChange: (selectedRowKeys, selectedRows) => {
+            selectedAlunos = selectedRows
+        }
+    }
+
+    const TabelaAlunos = () => {
+
+        return (
+            <div>
+                <Table
+                    rowKey="_id"
+                    rowSelection={rowSelection}
+                    columns={columnsAlunos}
+                    dataSource={listaAlunos}
+                />
+            </div>
+        );
+    };
 
     const columnsAlunos = [
         {
-            title: 'Name',
-            dataIndex: 'name',
-            render: (text) => <a>{text}</a>,
+            title: 'Nome do Aluno',
+            dataIndex: 'nome_aluno',
+            key: 'nome_aluno'
         },
         {
-            title: 'Age',
-            dataIndex: 'age',
-        },
-        {
-            title: 'Address',
-            dataIndex: 'address',
+            title: 'Data de matricula',
+            dataIndex: 'data_matricula',
+            key: 'data_matricula'
         },
     ];
-
-    console.log("Coluna Alunos "+typeof(columnsAlunos))
-    console.log("Lista Alunos "+typeof(listaAlunos))
-
-
-    
-    
-
-    const data = [
-        {
-            key: '1',
-            name: 'John Brown',
-            age: 32,
-            address: 'New York No. 1 Lake Park',
-        },
-        {
-            key: '2',
-            name: 'Jim Green',
-            age: 42,
-            address: 'London No. 1 Lake Park',
-        },
-        {
-            key: '3',
-            name: 'Joe Black',
-            age: 32,
-            address: 'Sidney No. 1 Lake Park',
-        },
-        {
-            key: '4',
-            name: 'Disab324led User',
-            age: 99,
-            address: 'Sidney No. 1 Lake Park',
-        },
-        {
-            key: '5',
-            name: 'Disa34bled User',
-            age: 99,
-            address: 'Sidney No. 1 Lake Park',
-        },
-        {
-            key: '6',
-            name: 'Disabled32 User',
-            age: 99,
-            address: 'Sidney No. 1 Lake Park',
-        },
-        {
-            key: '7',
-            name: 'Disabled User',
-            age: 99,
-            address: 'Sidney No. 1 Lake Park',
-        },
-    ];
-
-    let listaTurmas
-    axios.get("http://localhost:3001/turmas")
-        .then(data => {
-            listaTurmas = data.data.dados
-            console.log("Turmas\n" + listaTurmas)
-        });
 
     const columns = [
         {
@@ -117,54 +99,97 @@ export default function Turmas() {
         {
             title: 'Alunos',
             dataIndex: 'alunos',
-            key: 'alunos'
+            render: () => collapseAlunos(),
+            width: 800
+        },
+        {
+            title: 'Ações',
+            key: 'operation',
+            render: (params) => {
+                // console.log(params)
+                return (<Space>
+                    <Button type="primary" onClick={() => handleEdit(params)} >
+                        Editar
+                    </Button>
+                    <Popconfirm
+                        title="Deseja excluir essa turma?"
+                        onConfirm={() => {
+                            handleDelete(params)
+                            message.success("Turma excluída")
+                        }}
+                        onCancel={() => { }}
+                        okText="Sim"
+                        cancelText="Não">
+                        <Button type="default">
+                            Excluir
+                        </Button>
+                    </Popconfirm>
+                </Space>)
+            }
         }
     ]
 
-    const rowSelection = {
-        onChange: (selectedRowKeys, selectedRows) => {
-            console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows);
-        },
-        getCheckboxProps: (record) => ({
-            disabled: record.name === 'Disabled User',
-            // Column configuration not to be checked
-            name: record.name,
-        }),
-    };
+    const handleDelete = (values) => {
+        axios.delete(`http://localhost:3001/turmas/${values._id}`)
+            .then(data => {
+                console.log(data)
+                var { turmas } = data.data
+                console.log(turmas)
+                turmas = formatDate(turmas)
+                setListaTurmas(turmas)
+            }
+            )
+    }
 
-    const Demo = () => {
-        const [selectionType, setSelectionType] = useState('checkbox');
-        return (
-            <div>
-                <Radio.Group
-                    onChange={({ target: { value } }) => {
-                        setSelectionType(value);
-                    }}
-                    value={selectionType}
-                >
-                    <Radio value="checkbox">Checkbox</Radio>
-                    <Radio value="radio">radio</Radio>
-                </Radio.Group>
+    const handleEdit = (values) => {
+        setInEdit(values)
+        setIsEdit(true)
+        console.log(values)
+        alunosTurma = values.alunos
+        var data = values.data_inicio.split("/").reverse().join("-")
+        form.setFieldsValue({ nome_turma: values.nome_turma, data_inicio: moment(data), curso: values.curso })
+    }
 
-                <Divider />
-
-                <Table
-                    rowSelection={{
-                        type: selectionType,
-                        ...rowSelection,
-                    }}
-                    columns={columnsAlunos}
-                    dataSource={data}
-                />
-            </div>
-        );
-    };
-
+    const formatDate = (turmas) => turmas.map(turma => ({ ...turma, data_inicio: format(new Date(turma.data_inicio), "dd/MM/yyyy") }))
 
     const handleFinish = (values) => {
-        axios.post("http://localhost:3001/turmas", values).then(data => {
-            console.log(data)
-        })
+        const newValues = {
+            ...values, alunos: selectedAlunos.map(aluno => {
+                var data = aluno.data_matricula.split("/").reverse().join("-")
+                return ({ ...aluno, data_matricula: data })
+            })
+        }
+        if (isEdit) {
+            axios.patch(`http://localhost:3001/turmas/${inEdit._id}`, newValues)
+                .then(data => {
+                    console.log(data)
+                    var { turmas } = data.data
+                    turmas = formatDate(turmas)
+                    setListaTurmas(turmas)
+                    setInEdit(null)
+                })
+        } else {
+            console.log(newValues)
+            axios.post("http://localhost:3001/turmas", newValues).then(data => {
+                console.log(data)
+                var { turmas } = data.data
+                turmas = formatDate(turmas)
+                setListaTurmas(turmas)
+            })
+        }
+        form.resetFields()
+        setIsEdit(false)
+    }
+
+    const collapseAlunos = () => {
+        const text = listaAlunos.map(aluno => `${aluno.nome_aluno}; `)
+        return (
+            <Collapse>
+                <Panel header="Alunos">
+                    {text}
+                </Panel>
+            </Collapse>
+        )
     }
 
     return (
@@ -178,7 +203,7 @@ export default function Turmas() {
                         name='formulario'
                         layout='vertical'
                         onFinish={handleFinish}
-
+                        form={form}
                     >
                         <Row gutter={24}>
                             <Col span={8}>
@@ -210,19 +235,26 @@ export default function Turmas() {
                                     nome={['alunos']}
                                     label="Alunos"
                                 >
-                                    <Demo />
+                                    <TabelaAlunos />
                                 </Form.Item>
                             </Col>
                         </Row>
-                        <Row justify="space-between">
-                            <Button type="primary" htmlType="submit">
-                                Salvar
-                            </Button>
+                        <Row >
+                            <Space style={{ marginBottom: 16 }}>
+                                <Button type="primary" htmlType="submit">
+                                    {isEdit ? `Editar` : `Salvar`}
+                                </Button>
+                                <Button type="default" htmlType="reset">
+                                    Cancelar
+                                </Button>
+                            </Space>
+
                         </Row>
                     </Form>
                 </div>
                 <div className="site-layout-background" style={{ padding: 24, minHeight: 200, marginTop: 12 }}>
-                    <Table dataSource={listaTurmas} columns={columns} />
+                    <Table dataSource={listaTurmas} columns={columns} rowKey="_id" />
+
                 </div>
             </Content>
         </Layout>

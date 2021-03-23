@@ -1,32 +1,33 @@
-import { Input, Form, Col, Row, DatePicker, Button, Layout, Breadcrumb, Table } from 'antd';
+import { Input, Form, Col, Row, DatePicker, Button, Layout, Breadcrumb, Table, Space, Popconfirm, message } from 'antd';
 import { ptBR } from 'antd/lib/locale/pt_BR';
 import './Alunos.css'
 import axios from 'axios';
-import moment from 'moment';
 import React, { useState, useEffect } from 'react';
-const { Content } = Layout;
+import { format } from 'date-fns'
+import moment from 'moment'
 
 export default function Alunos() {
 
+    const [isEdit, setIsEdit] = useState(false)
+    const [inEdit, setInEdit] = useState(null)
+    const [form] = Form.useForm()
+    const { Content } = Layout;
     const [listaAlunos, setListaAlunos] = useState(null)
+
     useEffect(() => {
         const getAlunos = () => {
             axios.get("http://localhost:3001/alunos")
-                .then(data => {
-                    setListaAlunos(data.data.dados)
-                    console.log(listaAlunos)
+                .then(info => {
+                    info.data.dados = formatDate(info.data.dados)
+                    setListaAlunos(info.data.dados)
                 });
         }
-        if(listaAlunos === null) getAlunos()
+        if (listaAlunos === null) getAlunos()
     })
 
+    const formatDate = (alunos) => alunos.map(aluno => ({ ...aluno, data_matricula: format(new Date(aluno.data_matricula), "dd/MM/yyyy") }))
 
     const columns = [
-        {
-            title: 'ID',
-            dataIndex: '_id',
-            key:'_id'
-        },
         {
             title: 'Nome do Aluno',
             dataIndex: 'nome_aluno',
@@ -36,13 +37,74 @@ export default function Alunos() {
             title: 'Data de matricula',
             dataIndex: 'data_matricula',
             key: 'data_matricula'
+        },
+        {
+            title: 'Ações',
+            key: 'operation',
+            render: (params) => {
+                //console.log(params)
+                return (<Space>
+                    <Button type="primary" onClick={() => handleEdit(params)} >
+                        Editar
+                    </Button>
+                    <Popconfirm
+                        title="Deseja excluir esse aluno?"
+                        onConfirm={() => {
+                            handleDelete(params)
+                            message.success("Aluno excluído")
+                        }}
+                        onCancel={() => { }}
+                        okText="Sim"
+                        cancelText="Não">
+                        <Button type="default">
+                            Excluir
+                        </Button>
+                    </Popconfirm>
+                </Space>)
+            }
         }
     ]
 
+    const handleEdit = (values) => {
+        setInEdit(values)
+        setIsEdit(true)
+        var data = values.data_matricula.split("/").reverse().join("-")
+        form.setFieldsValue({ nome_aluno: values.nome_aluno, data_matricula: moment(data) })
+    }
+
+    const handleDelete = (values) => {
+        axios.delete(`http://localhost:3001/alunos/${values._id}`)
+            .then(data => {
+                console.log(data)
+                var { alunos } = data.data
+                console.log(alunos)
+                alunos = formatDate(alunos)
+                setListaAlunos(alunos)
+            }
+            )
+    }
+
     const handleFinish = (values) => {
-        axios.post("http://localhost:3001/alunos", values).then(data => {
-            console.log(data)
-        })
+        if (isEdit) {
+            axios.patch(`http://localhost:3001/alunos/${inEdit._id}`, values).then(data => {
+                console.log(data)
+                var { alunos } = data.data
+                console.log(alunos)
+                alunos = formatDate(alunos)
+                setListaAlunos(alunos)
+                setInEdit(null)
+            })
+        } else {
+            axios.post("http://localhost:3001/alunos", values).then(data => {
+                console.log(data)
+                var { alunos } = data.data
+                console.log(alunos)
+                alunos = formatDate(alunos)
+                setListaAlunos(alunos)
+            })
+        }
+        form.resetFields()
+        setIsEdit(false)
     }
 
     return (
@@ -53,10 +115,10 @@ export default function Alunos() {
                 </Breadcrumb>
                 <div className="site-layout-background" style={{ padding: 24, minHeight: 200 }}>
                     <Form
+                        form={form}
                         name='formulario'
                         layout='vertical'
                         onFinish={handleFinish}
-
                     >
                         <Row gutter={24}>
                             <Col span={12}>
@@ -76,15 +138,30 @@ export default function Alunos() {
                                 </Form.Item >
                             </Col>
                         </Row>
-                        <Row justify="space-between">
-                            <Button type="primary" htmlType="submit">
-                                Salvar
-              </Button>
+                        <Row >
+                            <Space style={{ marginBottom: 16 }}>
+                                <Button type="primary" htmlType="submit">
+                                    {isEdit ? `Editar` : `Salvar`}
+                                </Button>
+                                <Button htmlType="reset">
+                                    Cancelar
+                            </Button>
+                            </Space>
                         </Row>
                     </Form>
                 </div>
                 <div className="site-layout-background" style={{ padding: 24, minHeight: 200, marginTop: 12 }}>
-                    <Table dataSource={listaAlunos} columns={columns} />
+                    <Table bordered='true' dataSource={listaAlunos} columns={columns} rowKey="_id"
+                        onRow={(record, rowIndex) => {
+                            return {
+                                onDoubleClick: event => {
+                                    message.success("Você clicou na linha ")
+                                    console.log(record, rowIndex)
+                                }
+                            }
+                        }}
+
+                    />
                 </div>
             </Content>
         </Layout>
