@@ -13,16 +13,31 @@ export default function Alunos() {
     const [form] = Form.useForm()
     const { Content } = Layout;
     const [listaAlunos, setListaAlunos] = useState(null)
+    const [listaTurmas, setListaTurmas] = useState(null)
 
     useEffect(() => {
         const getAlunos = () => {
             axios.get("http://localhost:3001/alunos")
                 .then(info => {
-                    info.data.dados = formatDate(info.data.dados)
+                    for (let index = 0; index < info.data.dados.length; index++) {
+                        const data = new Date(info.data.dados[index].data_matricula);
+                        info.data.dados[index].data_matricula = format(data, "dd/MM/yyyy")
+                    }
                     setListaAlunos(info.data.dados)
                 });
         }
+        const getTurmas = () => {
+            axios.get("http://localhost:3001/turmas")
+                .then(info => {
+                    for (let index = 0; index < info.data.dados.length; index++) {
+                        const data = new Date(info.data.dados[index].data_inicio);
+                        info.data.dados[index].data_inicio = format(data, "dd/MM/yyyy")
+                    }
+                    setListaTurmas(info.data.dados)
+                });
+        }
         if (listaAlunos === null) getAlunos()
+        if (listaTurmas === null) getTurmas()
     })
 
     const formatDate = (alunos) => alunos.map(aluno => ({ ...aluno, data_matricula: format(new Date(aluno.data_matricula), "dd/MM/yyyy") }))
@@ -42,16 +57,15 @@ export default function Alunos() {
             title: 'Ações',
             key: 'operation',
             render: (params) => {
-                //console.log(params)
                 return (<Space>
                     <Button type="primary" onClick={() => handleEdit(params)} >
                         Editar
                     </Button>
                     <Popconfirm
-                        title="Deseja excluir esse aluno?"
+                        title={`Deseja excluir esse aluno?`}
                         onConfirm={() => {
                             handleDelete(params)
-                            message.success("Aluno excluído")
+                            message.loading(`Desmatriculando ${params.nome_aluno} das turmas`, 2.5).then(() => message.success(`${params.nome_aluno} excluído`))
                         }}
                         onCancel={() => { }}
                         okText="Sim"
@@ -80,8 +94,18 @@ export default function Alunos() {
                 console.log(alunos)
                 alunos = formatDate(alunos)
                 setListaAlunos(alunos)
-            }
-            )
+                let turmas = listaTurmas
+                console.log(turmas.length)
+                turmas.map(turma => {
+                    turma.alunos.map( aluno => {
+                        let index = turma.alunos.indexOf(aluno)
+                        console.log(`ID do aluno: ${aluno._id} ID do values: ${values._id}`)
+                        aluno._id === values._id ? turma.alunos.splice(index, 1) : console.log("Aluno não esta na turma: ", turma.nome_turma)
+                    })
+                    console.log(`Alunos da turma\n`, turma.alunos)
+                    axios.patch(`http://localhost:3001/turmas/${turma._id}`, turma)
+                })   
+            })
     }
 
     const handleFinish = (values) => {
@@ -125,6 +149,7 @@ export default function Alunos() {
                                 <Form.Item
                                     name={['nome_aluno']}
                                     label="Nome Completo"
+                                    rules={[{required: true, message: 'Por favor digite o nome do aluno'}]}
                                 >
                                     <Input placeholder="Ex. João da Silva Santos" />
                                 </Form.Item>
@@ -133,6 +158,7 @@ export default function Alunos() {
                                 <Form.Item
                                     name={['data_matricula']}
                                     label="Data de Matrícula"
+                                    rules={[{required: true, message: 'Por favor escolha a data de matrícula'}]}
                                 >
                                     <DatePicker picker="date" placeholder="Ex. 01/01/2015" locale={ptBR} format="DD/MM/YYYY" />
                                 </Form.Item >
@@ -143,7 +169,7 @@ export default function Alunos() {
                                 <Button type="primary" htmlType="submit">
                                     {isEdit ? `Editar` : `Salvar`}
                                 </Button>
-                                <Button htmlType="reset">
+                                <Button htmlType="reset" onClick={ () => {setIsEdit(false); setInEdit(null)}} >
                                     Cancelar
                             </Button>
                             </Space>
@@ -151,17 +177,7 @@ export default function Alunos() {
                     </Form>
                 </div>
                 <div className="site-layout-background" style={{ padding: 24, minHeight: 200, marginTop: 12 }}>
-                    <Table bordered='true' dataSource={listaAlunos} columns={columns} rowKey="_id"
-                        onRow={(record, rowIndex) => {
-                            return {
-                                onDoubleClick: event => {
-                                    message.success("Você clicou na linha ")
-                                    console.log(record, rowIndex)
-                                }
-                            }
-                        }}
-
-                    />
+                    <Table bordered='true' dataSource={listaAlunos} columns={columns} rowKey="_id"/>
                 </div>
             </Content>
         </Layout>
