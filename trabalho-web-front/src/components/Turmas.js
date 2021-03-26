@@ -11,7 +11,6 @@ import Checkbox from 'antd/lib/checkbox/Checkbox';
 export default function Turmas() {
 
     let selectedAlunos
-    let alunosTurma = null
     const { Panel } = Collapse;
     const { Content } = Layout;
     const { Search } = Input;
@@ -31,6 +30,7 @@ export default function Turmas() {
                         const data = new Date(info.data.dados[index].data_matricula);
                         info.data.dados[index].data_matricula = format(data, "dd/MM/yyyy")
                     }
+                    ordenarAlunos(info.data.dados)
                     setListaAlunos(info.data.dados)
                 });
         }
@@ -44,67 +44,72 @@ export default function Turmas() {
                     setListaTurmas(info.data.dados)
                 });
         }
-        if (listaAlunos === null) getAlunos()
+        if (listaAlunos === null) {
+            getAlunos()
+            setListaAlunos(listaAlunos)
+        }
         if (listaTurmas === null) getTurmas()
-    })
 
-
-
-    const TabelaAlunos = () => {
-        return (
-            <div>
-                <Table
-                    bordered={true}
-                    rowKey="_id"
-                    columns={columnsAlunos}
-                    dataSource={listaAlunos}
-                />
-            </div>
-        );
-    };
-
-    const columnsAlunos = [
-        {
-            title: 'Matriculado',
-            dataIndex: '_id',
-            key: '_id',
-            onCell: (record, rowIndex) => {
-                console.log(record, rowIndex)
-            },
-            render: (text) => {
-                if (isEdit) {
-                    for (let i = 0; i < alunosMatriculados.length; i++) {
-                        if (text === alunosMatriculados[i]._id) {
-                            console.log(`indice ${i} dados`, alunosMatriculados[i])
-                            setChecked(true)
-                        }
-                    }
-                    console.log("texto\n", text)
-                    return (
-                        <Checkbox checked={checked}
-                            onChange={e => {
-                                console.log(e)
-                            }}
-                        />
-                    )
-                } else {
-                    return (
-                        <Checkbox checked={checked} />
-                    )
-                }
+        const ordenarAlunos = (alunos) => {
+            if (alunos) {
+                let alunosOrdenados = alunos
+                alunosOrdenados.sort((a, b) => {
+                    return (a.nome_aluno > b.nome_aluno) ? 1 : ((b.nome_aluno > a.nome_aluno) ? -1 : 0)
+                })
+                return alunosOrdenados;
             }
-        },
-
+        }
+    })
+    const columnsAlunosMatriculados = [
         {
             title: 'Nome do Aluno',
             dataIndex: 'nome_aluno',
-            key: 'nome_aluno'
+            key: 'nome_aluno',
         },
         {
             title: 'Data de matricula',
             dataIndex: 'data_matricula',
             key: 'data_matricula'
         },
+        {
+            title: 'Ações',
+            dataIndex: '_id',
+            key: 'operation',
+            render: (text, record, index) => {
+                return (
+                    <Space>
+                        <Button type="primary" onClick={() => handleRemove(record)}>
+                            Remover
+                        </Button>
+                    </Space>)
+            }
+        }
+    ];
+
+    const columnsAlunos = [
+        {
+            title: 'Nome do Aluno',
+            dataIndex: 'nome_aluno',
+            key: 'nome_aluno',
+        },
+        {
+            title: 'Data de matricula',
+            dataIndex: 'data_matricula',
+            key: 'data_matricula'
+        },
+        {
+            title: 'Ações',
+            dataIndex: '_id',
+            key: 'operation',
+            render: (text, record, index) => {
+                return (
+                    <Space>
+                        <Button type="primary" onClick={() => handleAdd(record)}>
+                            Adicionar
+                        </Button>
+                    </Space>)
+            }
+        }
     ];
 
     const columns = [
@@ -133,7 +138,6 @@ export default function Turmas() {
             title: 'Ações',
             key: 'operation',
             render: (params) => {
-                // console.log(params)
                 return (<Space>
                     <Button type="primary" onClick={() => handleEdit(params)} >
                         Editar
@@ -155,6 +159,45 @@ export default function Turmas() {
             }
         }
     ]
+
+    const rowSelectionAlunos = {
+        onChange: (selectedRowKey, selectedRows) => {
+            selectedAlunos = selectedRows
+        }
+    }
+
+    const TabelaMatriculados = () => {
+        return (
+            <Table
+                bordered={true}
+                rowKey='_id'
+                dataSource={alunosMatriculados} columns={columnsAlunosMatriculados} 
+                />
+        )
+    }
+
+
+    const handleAdd = (values) => {
+        let alunos = []
+        if (alunosMatriculados) {
+            alunos = alunosMatriculados
+        }
+        alunos.push(values)
+        setAlunosMatriculados(alunos)
+    }
+
+    const handleRemove = (values) => {
+        console.log(values)
+        console.log(alunosMatriculados)
+        let alunos = []
+        if (alunosMatriculados) {
+            console.log(alunosMatriculados)
+            alunos = alunosMatriculados
+            let index = alunos.indexOf(values)
+            alunos.splice(index, 1)
+        }
+        setAlunosMatriculados(alunos)
+    }
 
     const handleDelete = (values) => {
         axios.delete(`http://localhost:3001/turmas/${values._id}`)
@@ -267,18 +310,28 @@ export default function Turmas() {
                                     <Input placeholder="Engenharia da Computação" />
                                 </Form.Item>
                             </Col>
-                            <Col span={8}>
+                            <Col span={24}>
                                 <Form.Item
-                                    nome={['alunos']}
-                                    label="Alunos"
+                                    label="Adicionar alunos"
                                 >
-                                    <Search
-                                        placeholder="Pesquise o Aluno"
-                                        enterButton
-                                        allowClear
-                                        onSearch={onSearch}
-                                    />
-                                    {alunosTurma ? <List /> : <List/>}
+                                    <div style={{ marginBottom: 20 }}>
+                                        <Search
+                                            style={{ maxWidth: 500 }}
+                                            placeholder="Pesquise o Aluno"
+                                            enterButton
+                                            allowClear
+                                            onSearch={onSearch}
+                                        />
+                                    </div>
+                                    <Table bordered={true} rowKey='_id' dataSource={listaAlunos} columns={columnsAlunos} rowSelection={rowSelectionAlunos} />
+                                </Form.Item>
+                            </Col>
+                            <Col span={24}>
+                                <Form.Item
+                                    name={['alunos']}
+                                    label="Alunos adicionados"
+                                >
+                                    <TabelaMatriculados/>
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -287,7 +340,7 @@ export default function Turmas() {
                                 <Button type="primary" htmlType="submit">
                                     {isEdit ? `Editar` : `Salvar`}
                                 </Button>
-                                <Button type="default" htmlType="reset" onClick={() => { setChecked(false); setIsEdit(false); setInEdit(null) }}>
+                                <Button type="default" htmlType="reset" onClick={() => { setAlunosMatriculados(null); setChecked(false); setIsEdit(false); setInEdit(null) }}>
                                     Cancelar
                                 </Button>
                             </Space>

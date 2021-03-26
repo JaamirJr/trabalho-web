@@ -23,6 +23,7 @@ export default function Alunos() {
                         const data = new Date(info.data.dados[index].data_matricula);
                         info.data.dados[index].data_matricula = format(data, "dd/MM/yyyy")
                     }
+                    ordenarAlunos(info.data.dados)
                     setListaAlunos(info.data.dados)
                 });
         }
@@ -38,9 +39,29 @@ export default function Alunos() {
         }
         if (listaAlunos === null) getAlunos()
         if (listaTurmas === null) getTurmas()
+
+        const ordenarAlunos = (alunos) => {
+            if (alunos) {
+                let alunosOrdenados = alunos
+                alunosOrdenados.sort((a, b) => {
+                    return (a.nome_aluno > b.nome_aluno) ? 1 : ((b.nome_aluno > a.nome_aluno) ? -1 : 0)
+                })
+                return alunosOrdenados;
+            }
+        }
     })
 
     const formatDate = (alunos) => alunos.map(aluno => ({ ...aluno, data_matricula: format(new Date(aluno.data_matricula), "dd/MM/yyyy") }))
+
+    const ordenarAlunos = (alunos) => {
+        if (alunos) {
+            let alunosOrdenados = alunos
+            alunosOrdenados.sort((a, b) => {
+                return (a.nome_aluno > b.nome_aluno) ? 1 : ((b.nome_aluno > a.nome_aluno) ? -1 : 0)
+            })
+            return alunosOrdenados;
+        }
+    }
 
     const columns = [
         {
@@ -115,6 +136,7 @@ export default function Alunos() {
                 var { alunos } = data.data
                 console.log(alunos)
                 alunos = formatDate(alunos)
+                ordenarAlunos(alunos)
                 setListaAlunos(alunos)
                 setInEdit(null)
             })
@@ -124,6 +146,7 @@ export default function Alunos() {
                 var { alunos } = data.data
                 console.log(alunos)
                 alunos = formatDate(alunos)
+                ordenarAlunos(alunos)
                 setListaAlunos(alunos)
             })
         }
