@@ -254,6 +254,7 @@ export default function Turmas() {
         setChecked(false)
     }
 
+
     const collapseAlunos = (record) => {
         const text = record ? record.map(aluno => `${aluno.nome_aluno}; `) : ''
         return (
