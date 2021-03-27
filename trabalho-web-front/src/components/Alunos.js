@@ -17,7 +17,7 @@ export default function Alunos() {
 
     useEffect(() => {
         const getAlunos = () => {
-            axios.get("http://localhost:3001/alunos")
+            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_matricula);
@@ -28,7 +28,7 @@ export default function Alunos() {
                 });
         }
         const getTurmas = () => {
-            axios.get("http://localhost:3001/turmas")
+            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_inicio);
@@ -108,7 +108,7 @@ export default function Alunos() {
     }
 
     const handleDelete = (values) => {
-        axios.delete(`http://localhost:3001/alunos/${values._id}`)
+        axios.delete(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com0-56-254.sa-east-1.compute.amazonaws.com:3001/alunos/${values._id}`)
             .then(data => {
                 console.log(data)
                 var { alunos } = data.data
@@ -118,20 +118,22 @@ export default function Alunos() {
                 let turmas = listaTurmas
                 console.log(turmas.length)
                 turmas.map(turma => {
-                    turma.alunos.map( aluno => {
+                    turma.alunos.map(aluno => {
                         let index = turma.alunos.indexOf(aluno)
                         console.log(`ID do aluno: ${aluno._id} ID do values: ${values._id}`)
                         aluno._id === values._id ? turma.alunos.splice(index, 1) : console.log("Aluno não esta na turma: ", turma.nome_turma)
+                        return 'null'
                     })
                     console.log(`Alunos da turma\n`, turma.alunos)
-                    axios.patch(`http://localhost:3001/turmas/${turma._id}`, turma)
-                })   
+                    axios.patch(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas/${turma._id}`, turma)
+                    return 'null'
+                })
             })
     }
 
     const handleFinish = (values) => {
         if (isEdit) {
-            axios.patch(`http://localhost:3001/alunos/${inEdit._id}`, values).then(data => {
+            axios.patch(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos/${inEdit._id}`, values).then(data => {
                 console.log(data)
                 var { alunos } = data.data
                 console.log(alunos)
@@ -141,7 +143,7 @@ export default function Alunos() {
                 setInEdit(null)
             })
         } else {
-            axios.post("http://localhost:3001/alunos", values).then(data => {
+            axios.post("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos", values).then(data => {
                 console.log(data)
                 var { alunos } = data.data
                 console.log(alunos)
@@ -172,7 +174,7 @@ export default function Alunos() {
                                 <Form.Item
                                     name={['nome_aluno']}
                                     label="Nome Completo"
-                                    rules={[{required: true, message: 'Por favor digite o nome do aluno'}]}
+                                    rules={[{ required: true, message: 'Por favor digite o nome do aluno' }]}
                                 >
                                     <Input placeholder="Ex. João da Silva Santos" />
                                 </Form.Item>
@@ -181,7 +183,7 @@ export default function Alunos() {
                                 <Form.Item
                                     name={['data_matricula']}
                                     label="Data de Matrícula"
-                                    rules={[{required: true, message: 'Por favor escolha a data de matrícula'}]}
+                                    rules={[{ required: true, message: 'Por favor escolha a data de matrícula' }]}
                                 >
                                     <DatePicker picker="date" placeholder="Ex. 01/01/2015" locale={ptBR} format="DD/MM/YYYY" />
                                 </Form.Item >
@@ -192,7 +194,7 @@ export default function Alunos() {
                                 <Button type="primary" htmlType="submit">
                                     {isEdit ? `Editar` : `Salvar`}
                                 </Button>
-                                <Button htmlType="reset" onClick={ () => {setIsEdit(false); setInEdit(null)}} >
+                                <Button htmlType="reset" onClick={() => { setIsEdit(false); setInEdit(null) }} >
                                     Cancelar
                             </Button>
                             </Space>
@@ -200,7 +202,7 @@ export default function Alunos() {
                     </Form>
                 </div>
                 <div className="site-layout-background" style={{ padding: 24, minHeight: 200, marginTop: 12 }}>
-                    <Table bordered='true' dataSource={listaAlunos} columns={columns} rowKey="_id"/>
+                    <Table bordered='true' dataSource={listaAlunos} columns={columns} rowKey="_id" />
                 </div>
             </Content>
         </Layout>

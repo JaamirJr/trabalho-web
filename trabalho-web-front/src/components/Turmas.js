@@ -1,30 +1,28 @@
 import './Turmas.css'
 import React, { useEffect, useState } from 'react';
-import { List, Input, Form, Col, Row, DatePicker, Button, Layout, Breadcrumb, Table, message, Space, Popconfirm, Collapse } from 'antd';
+import { Input, Form, Col, Row, DatePicker, Button, Layout, Breadcrumb, Table, message, Space, Popconfirm, Collapse } from 'antd';
 import { ptBR } from 'antd/lib/locale/pt_BR';
 import './Alunos.css'
 import axios from 'axios';
 import { format } from 'date-fns'
 import moment from 'moment';
-import Checkbox from 'antd/lib/checkbox/Checkbox';
 
 export default function Turmas() {
 
-    let selectedAlunos
     const { Panel } = Collapse;
     const { Content } = Layout;
     const { Search } = Input;
     const [isEdit, setIsEdit] = useState(false)
     const [inEdit, setInEdit] = useState(null)
     const [form] = Form.useForm()
-    const [alunosMatriculados, setAlunosMatriculados] = useState(null)
+    const [alunosMatriculados, setAlunosMatriculados] = useState([])
+    const [listaOriginal, setListaOriginal] = useState(null)
     const [listaAlunos, setListaAlunos] = useState(null)
     const [listaTurmas, setListaTurmas] = useState(null)
-    const [checked, setChecked] = useState(false)
 
     useEffect(() => {
         const getAlunos = () => {
-            axios.get("http://localhost:3001/alunos")
+            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_matricula);
@@ -35,7 +33,7 @@ export default function Turmas() {
                 });
         }
         const getTurmas = () => {
-            axios.get("http://localhost:3001/turmas")
+            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_inicio);
@@ -46,7 +44,7 @@ export default function Turmas() {
         }
         if (listaAlunos === null) {
             getAlunos()
-            setListaAlunos(listaAlunos)
+            setListaOriginal(listaAlunos)
         }
         if (listaTurmas === null) getTurmas()
 
@@ -59,7 +57,7 @@ export default function Turmas() {
                 return alunosOrdenados;
             }
         }
-    })
+    }, [listaTurmas, listaAlunos, setListaOriginal])
     const columnsAlunosMatriculados = [
         {
             title: 'Nome do Aluno',
@@ -160,47 +158,29 @@ export default function Turmas() {
         }
     ]
 
-    const rowSelectionAlunos = {
-        onChange: (selectedRowKey, selectedRows) => {
-            selectedAlunos = selectedRows
-        }
-    }
-
     const TabelaMatriculados = () => {
         return (
             <Table
                 bordered={true}
                 rowKey='_id'
-                dataSource={alunosMatriculados} columns={columnsAlunosMatriculados} 
-                />
+                dataSource={alunosMatriculados} columns={columnsAlunosMatriculados}
+            />
         )
     }
 
 
     const handleAdd = (values) => {
-        let alunos = []
-        if (alunosMatriculados) {
-            alunos = alunosMatriculados
-        }
-        alunos.push(values)
-        setAlunosMatriculados(alunos)
+        setAlunosMatriculados([...alunosMatriculados, values])
+        setListaAlunos(listaAlunos.filter(aluno => aluno._id !== values._id))
     }
 
     const handleRemove = (values) => {
-        console.log(values)
-        console.log(alunosMatriculados)
-        let alunos = []
-        if (alunosMatriculados) {
-            console.log(alunosMatriculados)
-            alunos = alunosMatriculados
-            let index = alunos.indexOf(values)
-            alunos.splice(index, 1)
-        }
-        setAlunosMatriculados(alunos)
+        setListaAlunos([...listaAlunos, values])
+        setAlunosMatriculados(alunosMatriculados.filter(aluno => aluno._id !== values._id))
     }
 
     const handleDelete = (values) => {
-        axios.delete(`http://localhost:3001/turmas/${values._id}`)
+        axios.delete(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas/${values._id}`)
             .then(data => {
                 console.log(data)
                 var { turmas } = data.data
@@ -212,8 +192,11 @@ export default function Turmas() {
     }
 
     const handleEdit = (values) => {
-        setAlunosMatriculados(values.alunos)
-        console.log(alunosMatriculados)
+        console.log(values.alunos)
+        var alunos = values.alunos
+        alunos = formatDateAlunos(alunos)
+        setAlunosMatriculados(alunos)
+        setListaAlunos(listaAlunos.filter(({ _id }) => alunos.map(aluno => aluno._id).indexOf(_id) === -1))
         setInEdit(values)
         setIsEdit(true)
         console.log(values)
@@ -222,17 +205,17 @@ export default function Turmas() {
     }
 
     const formatDate = (turmas) => turmas.map(turma => ({ ...turma, data_inicio: format(new Date(turma.data_inicio), "dd/MM/yyyy") }))
+    const formatDateAlunos = (alunos) => alunos.map(aluno => ({ ...aluno, data_matricula: format(new Date(aluno.data_matricula), "dd/MM/yyyy") }))
 
     const handleFinish = (values) => {
-        console.log(selectedAlunos)
         const newValues = {
-            ...values, alunos: selectedAlunos.map(aluno => {
+            ...values, alunos: alunosMatriculados.map(aluno => {
                 var data = aluno.data_matricula.split("/").reverse().join("-")
                 return ({ ...aluno, data_matricula: data })
             })
         }
         if (isEdit) {
-            axios.patch(`http://localhost:3001/turmas/${inEdit._id}`, newValues)
+            axios.patch(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas/${inEdit._id}`, newValues)
                 .then(data => {
                     console.log(data)
                     var { turmas } = data.data
@@ -242,7 +225,7 @@ export default function Turmas() {
                 })
         } else {
             console.log(newValues)
-            axios.post("http://localhost:3001/turmas", newValues).then(data => {
+            axios.post("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas", newValues).then(data => {
                 console.log(data)
                 var { turmas } = data.data
                 turmas = formatDate(turmas)
@@ -251,7 +234,8 @@ export default function Turmas() {
         }
         form.resetFields()
         setIsEdit(false)
-        setChecked(false)
+        setListaAlunos(listaOriginal)
+        setAlunosMatriculados([])
     }
 
 
@@ -267,7 +251,13 @@ export default function Turmas() {
     }
 
     const onSearch = value => {
-        console.log(value)
+        if (value === ''){
+            setListaAlunos(listaOriginal)
+            setListaAlunos(listaAlunos.filter(({ _id }) => alunosMatriculados.map(aluno => aluno._id).indexOf(_id) === -1))
+        }else {
+            setListaAlunos(listaOriginal)
+            setListaAlunos(listaAlunos.filter(aluno => aluno.nome_aluno.includes(value)))
+        }
     }
 
     return (
@@ -324,7 +314,17 @@ export default function Turmas() {
                                             onSearch={onSearch}
                                         />
                                     </div>
-                                    <Table bordered={true} rowKey='_id' dataSource={listaAlunos} columns={columnsAlunos} rowSelection={rowSelectionAlunos} />
+                                    <div style={{ marginBottom: 20 }}>
+                                        <Button type="primary"
+                                            onClick={() => {
+                                                setListaAlunos(listaOriginal)
+                                                setAlunosMatriculados([])
+                                            }}>
+                                            Limpar
+                                            </Button>
+                                    </div>
+
+                                    <Table bordered={true} rowKey='_id' dataSource={listaAlunos} columns={columnsAlunos} />
                                 </Form.Item>
                             </Col>
                             <Col span={24}>
@@ -332,7 +332,7 @@ export default function Turmas() {
                                     name={['alunos']}
                                     label="Alunos adicionados"
                                 >
-                                    <TabelaMatriculados/>
+                                    <TabelaMatriculados />
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -341,7 +341,7 @@ export default function Turmas() {
                                 <Button type="primary" htmlType="submit">
                                     {isEdit ? `Editar` : `Salvar`}
                                 </Button>
-                                <Button type="default" htmlType="reset" onClick={() => { setAlunosMatriculados(null); setChecked(false); setIsEdit(false); setInEdit(null) }}>
+                                <Button type="default" htmlType="reset" onClick={() => { setListaAlunos(listaOriginal); setAlunosMatriculados([]); setIsEdit(false); setInEdit(null) }}>
                                     Cancelar
                                 </Button>
                             </Space>
@@ -351,7 +351,6 @@ export default function Turmas() {
                 </div>
                 <div className="site-layout-background" style={{ padding: 24, minHeight: 200, marginTop: 12 }}>
                     <Table bordered={true} dataSource={listaTurmas} columns={columns} rowKey="_id" />
-
                 </div>
             </Content>
         </Layout>
