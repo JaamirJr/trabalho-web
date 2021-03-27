@@ -22,7 +22,7 @@ export default function Turmas() {
 
     useEffect(() => {
         const getAlunos = () => {
-            axios.get("http://localhost:3001/alunos")
+            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_matricula);
@@ -33,7 +33,7 @@ export default function Turmas() {
                 });
         }
         const getTurmas = () => {
-            axios.get("http://localhost:3001/turmas")
+            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_inicio);
@@ -180,7 +180,7 @@ export default function Turmas() {
     }
 
     const handleDelete = (values) => {
-        axios.delete(`http://localhost:3001/turmas/${values._id}`)
+        axios.delete(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas/${values._id}`)
             .then(data => {
                 console.log(data)
                 var { turmas } = data.data
@@ -215,7 +215,7 @@ export default function Turmas() {
             })
         }
         if (isEdit) {
-            axios.patch(`http://localhost:3001/turmas/${inEdit._id}`, newValues)
+            axios.patch(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas/${inEdit._id}`, newValues)
                 .then(data => {
                     console.log(data)
                     var { turmas } = data.data
@@ -225,7 +225,7 @@ export default function Turmas() {
                 })
         } else {
             console.log(newValues)
-            axios.post("http://localhost:3001/turmas", newValues).then(data => {
+            axios.post("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas", newValues).then(data => {
                 console.log(data)
                 var { turmas } = data.data
                 turmas = formatDate(turmas)
