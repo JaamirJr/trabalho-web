@@ -17,7 +17,7 @@ export default function Alunos() {
 
     useEffect(() => {
         const getAlunos = () => {
-            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos")
+            axios.get("http://localhost:3001/alunos")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_matricula);
@@ -28,7 +28,7 @@ export default function Alunos() {
                 });
         }
         const getTurmas = () => {
-            axios.get("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas")
+            axios.get("http://localhost:3001/turmas")
                 .then(info => {
                     for (let index = 0; index < info.data.dados.length; index++) {
                         const data = new Date(info.data.dados[index].data_inicio);
@@ -108,7 +108,7 @@ export default function Alunos() {
     }
 
     const handleDelete = (values) => {
-        axios.delete(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com0-56-254.sa-east-1.compute.amazonaws.com:3001/alunos/${values._id}`)
+        axios.delete(`http://localhost0-56-254.sa-east-1.compute.amazonaws.com:3001/alunos/${values._id}`)
             .then(data => {
                 console.log(data)
                 var { alunos } = data.data
@@ -125,7 +125,7 @@ export default function Alunos() {
                         return 'null'
                     })
                     console.log(`Alunos da turma\n`, turma.alunos)
-                    axios.patch(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/turmas/${turma._id}`, turma)
+                    axios.patch(`http://localhost:3001/turmas/${turma._id}`, turma)
                     return 'null'
                 })
             })
@@ -133,7 +133,7 @@ export default function Alunos() {
 
     const handleFinish = (values) => {
         if (isEdit) {
-            axios.patch(`http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos/${inEdit._id}`, values).then(data => {
+            axios.patch(`http://localhost:3001/alunos/${inEdit._id}`, values).then(data => {
                 console.log(data)
                 var { alunos } = data.data
                 console.log(alunos)
@@ -143,7 +143,7 @@ export default function Alunos() {
                 setInEdit(null)
             })
         } else {
-            axios.post("http://ec2-18-230-56-254.sa-east-1.compute.amazonaws.com:3001/alunos", values).then(data => {
+            axios.post("http://localhost:3001/alunos", values).then(data => {
                 console.log(data)
                 var { alunos } = data.data
                 console.log(alunos)
